@@ -1,0 +1,9 @@
+application:
+  env: "prod"
+
+telegram:
+  token: ""
+  timeout: 60s
+
+database:
+  path: "./database/schedule.db"
