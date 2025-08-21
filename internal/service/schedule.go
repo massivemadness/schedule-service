@@ -3,11 +3,11 @@ package service
 import (
 	"database/sql"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/massivemadness/schedule-service/internal/entity"
 	"github.com/massivemadness/schedule-service/internal/repository"
+	"github.com/massivemadness/schedule-service/internal/tools"
 )
 
 type ScheduleService struct {
@@ -47,16 +47,15 @@ func (s *ScheduleService) CreateSchedule(instructorID int64) (*entity.Schedule, 
 		return nil, err
 	}
 
-	selectedDate, err := time.Parse(time.DateOnly, form.Date.String)
+	selectedDate, err := time.Parse(time.DateOnly, form.Date)
 	if err != nil {
 		return nil, err
 	}
 
 	// Сортируем слоты по времени
-	rawStringSlots := strings.Split(form.Timeslots.String, ",")
-	sort.Slice(rawStringSlots, func(i, j int) bool {
-		ti, _ := time.Parse("15:04", rawStringSlots[i])
-		tj, _ := time.Parse("15:04", rawStringSlots[j])
+	sort.Slice(form.Timeslots, func(i, j int) bool {
+		ti, _ := time.Parse(tools.HumanTime, form.Timeslots[i])
+		tj, _ := time.Parse(tools.HumanTime, form.Timeslots[j])
 		return ti.Before(tj)
 	})
 
@@ -74,7 +73,7 @@ func (s *ScheduleService) CreateSchedule(instructorID int64) (*entity.Schedule, 
 
 	// Переводим строку в модель слота
 	var timeslots []entity.TimeSlot
-	for _, timeStr := range sort.StringSlice(rawStringSlots) {
+	for _, timeStr := range sort.StringSlice(form.Timeslots) {
 		timeslot := entity.TimeSlot{
 			ScheduleID: scheduleId,
 			Time:       timeStr,

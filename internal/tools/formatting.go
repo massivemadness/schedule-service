@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const (
+	HumanTime string = "15:04"
+	HumanDate string = "02.01.06"
+)
+
 var weekdays = []string{
 	"Воскресенье",
 	"Понедельник",
@@ -16,5 +21,5 @@ var weekdays = []string{
 }
 
 func FormatRuDate(t time.Time) string {
-	return fmt.Sprintf("%s, %s", weekdays[t.Weekday()], t.Format("02.01.06"))
+	return fmt.Sprintf("%s, %s", weekdays[t.Weekday()], t.Format(HumanDate))
 }

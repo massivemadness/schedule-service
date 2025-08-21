@@ -1,9 +1,7 @@
 package service
 
 import (
-	"database/sql"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/massivemadness/schedule-service/internal/entity"
@@ -39,7 +37,9 @@ func (s *FormService) SelectDate(instructorID int64, date string) error {
 	if err != nil {
 		return err
 	}
-	form.Date = sql.NullString{String: date, Valid: true}
+
+	form.Date = date
+
 	err = s.formRepo.UpdateForm(form)
 	if err != nil {
 		return err
@@ -53,30 +53,18 @@ func (s *FormService) SelectTime(instructorID int64, timeslot string) (string, e
 		return "", err
 	}
 
-	var timeslots []string
-	if form.Timeslots.Valid {
-		timeslots = strings.Split(form.Timeslots.String, ",")
-	}
-
-	if slices.Contains(timeslots, timeslot) {
-		timeslots = tools.RemoveValue(timeslots, timeslot)
-		form.Timeslots = sql.NullString{
-			String: strings.Join(timeslots, ","),
-			Valid:  true,
-		}
+	// Если время уже выбрано - удаляем
+	if slices.Contains(form.Timeslots, timeslot) {
+		form.Timeslots = tools.RemoveValue(form.Timeslots, timeslot)
 	} else {
-		timeslots = append(timeslots, timeslot)
-		form.Timeslots = sql.NullString{
-			String: strings.Join(timeslots, ","),
-			Valid:  true,
-		}
+		form.Timeslots = append(form.Timeslots, timeslot)
 	}
 
 	err = s.formRepo.UpdateForm(form)
 	if err != nil {
 		return "", err
 	}
-	return form.Date.String, nil
+	return form.Date, nil
 }
 
 func (s *FormService) GetAvailableDates(instructorID int64) ([]entity.DateOption, error) {
@@ -115,9 +103,8 @@ func (s *FormService) GetAvailableTimeslots(instructorID int64) ([]entity.TimeOp
 		return nil, err
 	}
 
-	selected := strings.Split(form.Timeslots.String, ",")
 	selectedMap := make(map[string]bool)
-	for _, time := range selected {
+	for _, time := range form.Timeslots {
 		selectedMap[time] = true
 	}
 
@@ -126,7 +113,7 @@ func (s *FormService) GetAvailableTimeslots(instructorID int64) ([]entity.TimeOp
 
 	var options []entity.TimeOption
 	for t := start; t.Before(end) || t.Equal(end); t = t.Add(30 * time.Minute) {
-		timeID := t.Format("15:04")
+		timeID := t.Format(tools.HumanTime)
 		option := entity.TimeOption{
 			ID:       timeID,
 			Time:     t,
